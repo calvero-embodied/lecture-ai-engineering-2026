@@ -77,3 +77,49 @@ def get_lecture_summary(lecture: int) -> str:
         available = sorted(p.stem for p in (DATA_DIR / "lectures").glob("*.md"))
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
+
+def make_quiz(lecture: int) -> str:
+    """指定された講義回の用語集から確認問題を1問作成する。
+
+    「第2回の確認問題を出して」など、特定の回の
+    クイズを求められたときに使用する。
+    """
+    import random
+
+    terms = [
+        item for item in load_glossary()
+        if item["lecture"] == lecture
+    ]
+
+    if not terms:
+        return f"第{lecture}回の用語が見つかりませんでした。"
+
+    selected = random.choice(terms)
+
+    return json.dumps({
+        "question": f"「{selected['term']}」の意味は？",
+        "answer": selected["definition"]
+    }, ensure_ascii=False)
+
+
+def save_learning_log(content: str) -> str:
+    """利用者の学習内容を learning_log/ に保存する。
+
+    「今日の学習内容を記録して」「学習ログを保存して」
+    と依頼されたときに使用する。
+    content には保存する学習内容を指定する。
+    """
+    from datetime import datetime
+    from uuid import uuid4
+
+    log_dir = Path("learning_log")
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = (
+        f"{datetime.now():%Y%m%d_%H%M%S}_"
+        f"{uuid4().hex[:8]}.md"
+    )
+    path = log_dir / filename
+    path.write_text(content, encoding="utf-8")
+
+    return f"学習記録を {path} に保存しました。"
