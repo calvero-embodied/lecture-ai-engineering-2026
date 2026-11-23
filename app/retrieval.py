@@ -209,3 +209,40 @@ if __name__ == "__main__":
         print(f"タイトル: {result['title']}")
         print(f"ページ: {result['page']}")
         print(f"\n{result['content']}")
+
+
+def search_with_neighbors(query: str) -> list[dict]:
+    """検索結果に、同一資料の前後1ページを重複なく追加する。"""
+    hits = search(query)
+    pages = load_pages()
+
+    page_map = {
+        (p["document_id"], p["page"]): p
+        for p in pages
+    }
+
+    results = []
+    seen = set()
+
+    for hit in hits:
+        doc_id = hit["document_id"]
+        page_num = hit["page"]
+
+        for n in (page_num - 1, page_num, page_num + 1):
+            page = page_map.get((doc_id, n))
+            if page is None:
+                continue
+
+            page_id = page["page_id"]
+            if page_id in seen:
+                continue
+
+            seen.add(page_id)
+            results.append({
+                **page,
+                "retrieval_source": (
+                    "hit" if n == page_num else "neighbor"
+                ),
+            })
+
+    return results
