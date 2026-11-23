@@ -80,6 +80,37 @@ def get_lecture_summary(lecture: int) -> str:
         return f"第{lecture}回の要点はまだありません。用意されている回: {', '.join(available)}"
     return path.read_text(encoding="utf-8")
 
+def make_quiz(lecture: int) -> str:
+    """指定された講義回の用語集から確認問題を1問作成する。
+
+    「第2回の確認問題を出して」など、特定の回の
+    クイズを求められたときに使用する。
+    """
+    import random
+
+    glossary = load_glossary()
+    terms = [
+        item for item in glossary
+        if item["lecture"] == lecture
+    ]
+
+    if not terms:
+        available = sorted({
+            item["lecture"] for item in glossary
+        })
+        return (
+            f"第{lecture}回の用語は登録されていません。"
+            f"利用可能な講義回: {', '.join(map(str, available))}。"
+            "利用可能な回を指定して再度試してください。"
+        )
+
+    selected = random.choice(terms)
+
+    return json.dumps({
+        "question": f"「{selected['term']}」の意味は？",
+        "answer": selected["definition"]
+    }, ensure_ascii=False)
+
 
 def search_materials(query: str) -> str:
     """第1〜3回の本講義資料を検索し、関連ページの本文・タイトル・ページ番号を返す。
